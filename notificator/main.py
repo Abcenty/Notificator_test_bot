@@ -4,6 +4,7 @@ from aiogram import Dispatcher
 from handlers import user_handlers, notes_handlers, incorrect_message_handler
 from bot import get_bot
 from logger import logger
+from services.uttils.send_reminder import check_reminders
 
 
 # Функция конфигурирования и запуска бота

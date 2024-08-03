@@ -14,12 +14,13 @@ class NotesGateway:
             return [note for note in scalars]
          
     @staticmethod
-    def get(name: str):
+    def get_for_remind(user_id: int):
         with session_factory() as session:
-            query = select(Notes).where(Notes.name == name) 
+            now = datetime.now()
+            query = session.query(Notes.text).filter(Notes.reminder_time <= now, Notes.user_id == user_id)
             result = session.execute(query)
-            notes = result.scalar()
-            return notes
+            note = result.scalars().first()
+            return note
         
     @staticmethod  
     def create(user_id: int, text: str, reminder_time: datetime):
@@ -27,9 +28,3 @@ class NotesGateway:
             session.add(Notes(user_id=user_id, text=text, reminder_time=reminder_time))
             session.commit()
             
-    @staticmethod
-    def delete(name: str):
-        with session_factory() as session:
-            query = session.query(Notes).filter(Notes.name == name).first()
-            session.delete(query)
-            session.commit()

@@ -20,10 +20,12 @@ bot = get_bot()
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message, state: FSMContext):
     telegram_id = message.from_user.id
+    username = message.from_user.username
     try:
         # Проверка на известность пользователя
         if UserGateway.get(telegram_id):
             await message.answer(text=LEXICON_RU['start_answer'], reply_markup=general_buttons)
+            await state.set_data(data={'telegram_id': telegram_id, 'username': username})
         else:
             await message.answer(text=LEXICON_RU['name_request'], reply_markup=cancel_button)
             await state.set_state(FSMFillForm.set_name)
@@ -72,6 +74,7 @@ async def process_setting_name(message: Message, state: FSMContext):
 @router.message(F.text, StateFilter(FSMFillForm.set_email))
 async def process_compliting_registration(message: Message, state: FSMContext):
     telegram_id = message.from_user.id
+    username = message.from_user.username
     try:
         email = message.text
         data = await state.get_data()
@@ -79,6 +82,7 @@ async def process_compliting_registration(message: Message, state: FSMContext):
         UserGateway.create(UserGateway, name=name, email=email, telegram_id=telegram_id)
         await message.answer(text=LEXICON_RU['compliting_registration_answer'], reply_markup=general_buttons)
         await state.clear()
+        await state.set_data(data={'telegram_id': telegram_id, 'username': username})
     except:
         await message.answer(text=LEXICON_RU['setting_email_error'])
         logger.info('Error while setting email and compliting registration by user')          

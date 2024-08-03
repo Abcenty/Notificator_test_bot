@@ -8,6 +8,12 @@ class TgBot:
     
     
 @dataclass
+class TgApp:
+    API_ID: str
+    API_HASH: str
+    
+    
+@dataclass
 class Postgres:
     DB_HOST: str
     DB_PORT: int
@@ -23,6 +29,7 @@ class Postgres:
 @dataclass
 class Config:
     tg_bot: TgBot
+    tg_app: TgApp
     postgres: Postgres
 
 
@@ -39,6 +46,10 @@ def load_config(path: str | None = None) -> Config:
                       DB_PASS=env('DB_PASS'),
                       DB_NAME=env('DB_NAME'),
                     ),
+                  tg_app=TgApp(
+                      API_ID=env('API_ID'),
+                      API_HASH=env('API_HASH'),
+                  )
                   )
 
 # Загружаем конфиг в переменную config

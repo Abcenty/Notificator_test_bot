@@ -1,3 +1,4 @@
+import asyncio
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.state import default_state
@@ -10,6 +11,7 @@ from services.gateways.notes_gateway import NotesGateway
 from services.gateways.users_gateway import UserGateway
 from bot import get_bot
 from logger import logger
+from services.uttils.send_reminder import check_reminders
 
 
 router = Router()
@@ -35,12 +37,15 @@ async def process_show_notes(message: Message):
 @router.message(F.text == LEXICON_RU['cancel'], StateFilter(FSMFillForm.create_note,
                                                             FSMFillForm.set_timestamp))
 async def process_canseling_creating_note(message: Message, state: FSMContext):
+    telegram_id = message.from_user.id
+    username = message.from_user.username
     try:
         await message.answer(
             text=LEXICON_RU['canceled_creating_note'],
             reply_markup=general_buttons,
         )
         await state.clear()
+        await state.set_data(data={'telegram_id': telegram_id, 'username': username})
     except:
         await message.answer(text=LEXICON_RU['creating_note_error'])
         logger.info('Error while creating note')
@@ -73,13 +78,16 @@ async def set_note_text(message: Message, state: FSMContext):
 @router.message(F.text, StateFilter(FSMFillForm.set_timestamp))
 async def set_note_timestamp(message: Message, state: FSMContext):
     telegram_id = message.from_user.id
-    try:
-        user_id = UserGateway.get(telegram_id).id
-        data = await state.get_data()
-        text = data['text']
-        NotesGateway.create(user_id=user_id, text=text, reminder_time=message.text)
-        await message.answer(text=LEXICON_RU['finish_creating_note_answer'], reply_markup=general_buttons)
-        await state.clear()
-    except:
-        await message.answer(text=LEXICON_RU['create_note_error'])
-        logger.info('Error while setting timestamp')
+    username = message.from_user.username
+    # try:
+    user_id = UserGateway.get(telegram_id).id
+    data = await state.get_data()
+    text = data['text']
+    NotesGateway.create(user_id=user_id, text=text, reminder_time=message.text)
+    asyncio.create_task(check_reminders(user_id, username))
+    await message.answer(text=LEXICON_RU['finish_creating_note_answer'], reply_markup=general_buttons)
+    await state.clear()
+    await state.set_data(data={'telegram_id': telegram_id, 'username': username})
+    # except:
+    #     await message.answer(text=LEXICON_RU['create_note_error'])
+    #     logger.info('Error while setting timestamp')
