@@ -4,14 +4,13 @@ from aiogram import Dispatcher
 from handlers import user_handlers, notes_handlers, incorrect_message_handler
 from bot import get_bot
 from logger import logger
-from services.uttils.send_reminder import check_reminders
 
 
 # Функция конфигурирования и запуска бота
 async def main():
     # Выводим в консоль информацию о начале запуска бота
-    logger.info('Starting bot')
-    
+    logger.info("Starting bot")
+
     global bot
     # Инициализируем бот и диспетчер
     bot = get_bot()

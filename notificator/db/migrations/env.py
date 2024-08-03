@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 from notificator.config_data.config import settings
-from notificator.db.models import Base, Users, Notes
+from notificator.db.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -13,7 +13,7 @@ config = context.config
 
 section = config.config_ini_section
 
-config.set_main_option('sqlalchemy.url', settings.postgres.DATABASE_URL_psycopg)
+config.set_main_option("sqlalchemy.url", settings.postgres.DATABASE_URL_psycopg)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -71,7 +71,8 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
         )
 
         with context.begin_transaction():

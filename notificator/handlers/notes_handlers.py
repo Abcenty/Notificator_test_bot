@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import F, Router
-from aiogram.filters import Command, CommandStart, StateFilter
+from aiogram.filters import StateFilter
 from aiogram.fsm.state import default_state
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
@@ -18,76 +18,94 @@ router = Router()
 
 bot = get_bot()
 
+
 # Этот хэндлер срабатывает на команду /start
-@router.message(F.text == LEXICON_RU['list_notes'], StateFilter(default_state))
+@router.message(F.text == LEXICON_RU["list_notes"], StateFilter(default_state))
 async def process_show_notes(message: Message):
     telegram_id = message.from_user.id
     try:
-        await message.answer(text=LEXICON_RU['show_notes_answer'], reply_markup=general_buttons)
+        await message.answer(
+            text=LEXICON_RU["show_notes_answer"],
+            reply_markup=general_buttons,
+        )
         user_id = UserGateway.get(telegram_id).id
         notes = [note.text for note in NotesGateway.list(user_id)]
         text = ", ".join(notes).replace(", ", "\n")
         await message.answer(text=text, reply_markup=general_buttons)
     except:
-        await message.answer(text=LEXICON_RU['showing_notes_error'])
-        logger.info('Error while showing notes')
-        
-        
+        await message.answer(text=LEXICON_RU["showing_notes_error"])
+        logger.info("Error while showing notes")
+
+
 # Этот хэндлер срабатывает на отмену создания заметки
-@router.message(F.text == LEXICON_RU['cancel'], StateFilter(FSMFillForm.create_note,
-                                                            FSMFillForm.set_timestamp))
+@router.message(
+    F.text == LEXICON_RU["cancel"],
+    StateFilter(
+        FSMFillForm.create_note,
+        FSMFillForm.set_timestamp,
+    ),
+)
 async def process_canseling_creating_note(message: Message, state: FSMContext):
     telegram_id = message.from_user.id
     username = message.from_user.username
     try:
         await message.answer(
-            text=LEXICON_RU['canceled_creating_note'],
+            text=LEXICON_RU["canceled_creating_note"],
             reply_markup=general_buttons,
         )
         await state.clear()
-        await state.set_data(data={'telegram_id': telegram_id, 'username': username})
+        await state.set_data(data={"telegram_id": telegram_id, "username": username})
     except:
-        await message.answer(text=LEXICON_RU['creating_note_error'])
-        logger.info('Error while creating note')
-        
-        
+        await message.answer(text=LEXICON_RU["creating_note_error"])
+        logger.info("Error while creating note")
+
+
 # Этот хэндлер срабатывает на запрос создания заявки
-@router.message(F.text == LEXICON_RU['create_note'], StateFilter(default_state))
+@router.message(F.text == LEXICON_RU["create_note"], StateFilter(default_state))
 async def create_note(message: Message, state: FSMContext):
     try:
-        await message.answer(text=LEXICON_RU['create_note_answer'], reply_markup=cancel_button)
+        await message.answer(
+            text=LEXICON_RU["create_note_answer"],
+            reply_markup=cancel_button,
+        )
         await state.set_state(FSMFillForm.create_note)
     except:
-        await message.answer(text=LEXICON_RU['create_note_error'])
-        logger.info('Error while creating note')
-        
-        
+        await message.answer(text=LEXICON_RU["create_note_error"])
+        logger.info("Error while creating note")
+
+
 # Этот хэндлер срабатывает на ввод текста заметки
 @router.message(F.text, StateFilter(FSMFillForm.create_note))
 async def set_note_text(message: Message, state: FSMContext):
     try:
-        await message.answer(text=LEXICON_RU['set_note_text_answer'], reply_markup=cancel_button)
-        await state.set_data(data={'text': message.text})
+        await message.answer(
+            text=LEXICON_RU["set_note_text_answer"],
+            reply_markup=cancel_button,
+        )
+        await state.set_data(data={"text": message.text})
         await state.set_state(FSMFillForm.set_timestamp)
     except:
-        await message.answer(text=LEXICON_RU['set_note_text_error'])
-        logger.info('Error while setting text of note')
-        
-     
+        await message.answer(text=LEXICON_RU["set_note_text_error"])
+        logger.info("Error while setting text of note")
+
+
 # Этот хэндлер срабатывает на ввод времени уведомления о заметке
 @router.message(F.text, StateFilter(FSMFillForm.set_timestamp))
 async def set_note_timestamp(message: Message, state: FSMContext):
     telegram_id = message.from_user.id
     username = message.from_user.username
-    # try:
-    user_id = UserGateway.get(telegram_id).id
-    data = await state.get_data()
-    text = data['text']
-    NotesGateway.create(user_id=user_id, text=text, reminder_time=message.text)
-    asyncio.create_task(check_reminders(user_id, username))
-    await message.answer(text=LEXICON_RU['finish_creating_note_answer'], reply_markup=general_buttons)
-    await state.clear()
-    await state.set_data(data={'telegram_id': telegram_id, 'username': username})
-    # except:
-    #     await message.answer(text=LEXICON_RU['create_note_error'])
-    #     logger.info('Error while setting timestamp')
+    try:
+        user_id = UserGateway.get(telegram_id).id
+        data = await state.get_data()
+        text: str = data["text"]
+        NotesGateway.create(user_id=user_id, text=text, reminder_time=message.text)
+        asyncio.create_task(check_reminders(user_id, username, text))
+        await message.answer(
+            text=LEXICON_RU["finish_creating_note_answer"],
+            reply_markup=general_buttons,
+        )
+        await state.clear()
+        await state.set_data(data={"telegram_id": telegram_id, "username": username})
+    except:
+        await message.answer(text=LEXICON_RU["create_note_error"])
+        logger.info("Error while setting timestamp")

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from db.models.base import Base
 
+
 class Notes(Base):
     __tablename__ = "notes"
 
